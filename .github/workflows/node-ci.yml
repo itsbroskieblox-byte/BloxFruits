@@ -1,0 +1,37 @@
+name: Node Server CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Optional safety check before running server
+      - name: Validate project files
+        run: node -c server.js
+
+      # Run server briefly (CI will NOT keep it alive)
+      - name: Start server (test run)
+        run: |
+          timeout 10s node server.js || true
